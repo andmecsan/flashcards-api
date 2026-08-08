@@ -39,6 +39,15 @@ module FlashcardsApi
     # Only loads a smaller set of middleware suitable for API only apps.
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
+    config.session_store :cookie_store, key: "_flashcards_session"
+    config.middleware.use ActionDispatch::Cookies
+    config.middleware.use ActionDispatch::Session::CookieStore, config.session_options
+    config.middleware.use OmniAuth::Builder do
+      provider :google_oauth2,
+      Rails.application.credentials.google[:client_id],
+      Rails.application.credentials.google[:client_secret],
+      scope: "email, profile"
+    end
     config.api_only = true
   end
 end

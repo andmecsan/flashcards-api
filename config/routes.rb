@@ -5,6 +5,8 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  get  "/auth/google_oauth2/callback", to: "auth#google_callback"
+  get  "/auth/failure",                to: "auth#failure"
   # Defines the root path route ("/")
   # root "posts#index"
 end
