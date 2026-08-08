@@ -4,6 +4,8 @@ class CardReview < ApplicationRecord
   belongs_to :card
   belongs_to :user
 
+  has_many :review_logs, dependent: :destroy
+
   validates :repetitions, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :interval, presence: true, numericality: { greater_than: 0 }
   validates :easiness, presence: true, numericality: { greater_than_or_equal_to: 1.3 }
