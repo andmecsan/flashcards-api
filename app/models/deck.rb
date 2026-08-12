@@ -10,10 +10,12 @@ class Deck < ApplicationRecord
   # @return [ActiveRecord::Relation<Card>]
   def due_cards_for(user)
     cards
-      .joins(:card_reviews)
-      .where(card_reviews: { user: user })
-      .where("card_reviews.next_review_at <= ?", Time.current)
-      .order("card_reviews.next_review_at ASC")
+      .left_joins(:card_reviews)
+      .where(
+        "card_reviews.id IS NULL OR (card_reviews.user_id = ? AND card_reviews.next_review_at <= ?)",
+        user.id, Time.current
+      )
+      .order("card_reviews.next_review_at ASC NULLS FIRST")
   end
 
   def due_count_for(user)
