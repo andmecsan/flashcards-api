@@ -40,6 +40,9 @@ gem "omniauth-google-oauth2"
 gem "omniauth-rails_csrf_protection"
 gem "jwt" 
 
+gem "pdf-reader" 
+gem "faraday"
+
 group :development, :test do
   gem "rspec-rails"
   gem "factory_bot_rails"  # para crear datos de prueba fácilmente
