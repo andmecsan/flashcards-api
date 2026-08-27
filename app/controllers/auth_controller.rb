@@ -4,7 +4,7 @@ class AuthController < ApplicationController
   def google_callback
     user = User.from_omniauth(request.env["omniauth.auth"])
     token = JwtService.encode({ user_id: user.id })
-    render json: { token: token, user: { id: user.id, name: user.name, email: user.email } }
+    redirect_to "http://localhost:5173/auth/callback?token=#{token}", allow_other_host: true
   end
 
   def failure
