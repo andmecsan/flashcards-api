@@ -1,6 +1,7 @@
 class Deck < ApplicationRecord
   belongs_to :user
-  has_many   :cards, dependent: :destroy
+  has_many :categories, dependent: :destroy
+  has_many :cards, through: :categories
 
   validates :name, presence: true,
                    uniqueness: { scope: :user_id, message: "ya existe un mazo con ese nombre" }

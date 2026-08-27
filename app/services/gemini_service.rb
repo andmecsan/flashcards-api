@@ -23,11 +23,11 @@ class GeminiService
 
   def request_body
     {
-      contents: [{
-        parts: [{
+      contents: [ {
+        parts: [ {
           text: prompt
-        }]
-      }]
+        } ]
+      } ]
     }
   end
 

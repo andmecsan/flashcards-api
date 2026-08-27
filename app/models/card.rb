@@ -1,7 +1,8 @@
 class Card < ApplicationRecord
-  belongs_to :deck
-  has_many   :card_reviews, dependent: :destroy
-  has_one    :user, through: :deck
+  belongs_to :category
+  has_one :deck, through: :category
+  has_many :card_reviews, dependent: :destroy
+  has_one :user, through: :deck
 
   validates :front, presence: true
   validates :back,  presence: true

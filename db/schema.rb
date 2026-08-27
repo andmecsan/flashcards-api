@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_08_164733) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_27_162633) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -31,11 +31,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_08_164733) do
 
   create_table "cards", force: :cascade do |t|
     t.text "back", null: false
+    t.bigint "category_id"
     t.datetime "created_at", null: false
-    t.bigint "deck_id", null: false
     t.text "front", null: false
     t.datetime "updated_at", null: false
-    t.index ["deck_id"], name: "index_cards_on_deck_id"
+    t.index ["category_id"], name: "index_cards_on_category_id"
+  end
+
+  create_table "categories", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "deck_id", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["deck_id", "name"], name: "index_categories_on_deck_id_and_name", unique: true
+    t.index ["deck_id"], name: "index_categories_on_deck_id"
   end
 
   create_table "decks", force: :cascade do |t|
@@ -68,7 +77,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_08_164733) do
 
   add_foreign_key "card_reviews", "cards"
   add_foreign_key "card_reviews", "users"
-  add_foreign_key "cards", "decks"
+  add_foreign_key "cards", "categories"
+  add_foreign_key "categories", "decks"
   add_foreign_key "decks", "users"
   add_foreign_key "review_logs", "card_reviews"
 end

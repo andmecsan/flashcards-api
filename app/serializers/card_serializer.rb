@@ -5,11 +5,11 @@ class CardSerializer
 
   def as_json(*)
     {
-      id:         @card.id,
-      front:      @card.front,
-      back:       @card.back,
-      deck_id:    @card.deck_id,
-      created_at: @card.created_at
+      id:          @card.id,
+      front:       @card.front,
+      back:        @card.back,
+      category_id: @card.category_id,
+      created_at:  @card.created_at
     }
   end
 end

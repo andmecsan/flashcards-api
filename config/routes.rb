@@ -7,9 +7,11 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :decks do
-        resources :cards, shallow: true
-        get  :study,  on: :member
+        get :study, on: :member
         post :import, on: :member
+        resources :categories, shallow: true do
+          resources :cards, shallow: true
+        end
       end
 
       resources :cards, only: [] do

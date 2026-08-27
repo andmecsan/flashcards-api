@@ -38,9 +38,9 @@ gem "rack-cors"
 
 gem "omniauth-google-oauth2"
 gem "omniauth-rails_csrf_protection"
-gem "jwt" 
+gem "jwt"
 
-gem "pdf-reader" 
+gem "pdf-reader"
 gem "faraday"
 
 group :development, :test do

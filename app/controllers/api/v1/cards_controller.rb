@@ -1,11 +1,11 @@
 module Api
   module V1
     class CardsController < BaseController
-      before_action :set_deck,  only: [:index, :create]
-      before_action :set_card,  only: [:show, :update, :destroy, :review]
+      before_action :set_category, only: [ :index, :create ]
+      before_action :set_card, only: [ :show, :update, :destroy, :review ]
 
       def index
-        cards = @deck.cards.order(created_at: :desc)
+        cards = @category.cards.order(created_at: :desc)
         render json: cards.map { |c| CardSerializer.new(c).as_json }
       end
 
@@ -14,7 +14,7 @@ module Api
       end
 
       def create
-        card = @deck.cards.build(card_params)
+        card = @category.cards.build(card_params)
         if card.save
           render json: CardSerializer.new(card).as_json, status: :created
         else
@@ -47,14 +47,14 @@ module Api
 
       private
 
-      def set_deck
-        @deck = current_user.decks.find(params[:deck_id])
+      def set_category
+        @category = Category.joins(:deck).where(decks: { user: current_user }).find(params[:category_id])
       rescue ActiveRecord::RecordNotFound
-        render json: { error: "Mazo no encontrado" }, status: :not_found
+        render json: { error: "Categoría no encontrada" }, status: :not_found
       end
 
       def set_card
-        @card = Card.joins(:deck).where(decks: { user: current_user }).find(params[:id])
+        @card = Card.joins(category: :deck).where(decks: { user: current_user }).find(params[:id])
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Tarjeta no encontrada" }, status: :not_found
       end

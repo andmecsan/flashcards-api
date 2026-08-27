@@ -11,8 +11,13 @@ FactoryBot.define do
     description { "Tarjetas de algoritmia" }
   end
 
-  factory :card do
+  factory :category do
     association :deck
+    name { "Conceptos básicos" }
+  end
+
+  factory :card do
+    association :category
     front { "¿Qué es SM-2?" }
     back { "Un algoritmo de repaso espaciado" }
   end

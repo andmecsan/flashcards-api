@@ -1,7 +1,7 @@
 module Api
   module V1
     class DecksController < BaseController
-      before_action :set_deck, only: [:show, :update, :destroy, :study, :import]
+      before_action :set_deck, only: [ :show, :update, :destroy, :study, :import ]
 
       def index
         decks = current_user.decks.order(created_at: :desc)
@@ -40,28 +40,30 @@ module Api
       end
 
       def import
-        unless params[:file].present?
-          return render json: { error: "Debes subir un archivo PDF" }, status: :unprocessable_entity
-        end
-      
-        text = PdfExtractorService.new(params[:file]).extract_text
-      
-        if text.blank?
-          return render json: { error: "No se pudo extraer texto del PDF" }, status: :unprocessable_entity
-        end
-      
-        generated = GeminiService.new(text).generate_cards
-      
-        if generated.empty?
-          return render json: { error: "No se pudieron generar tarjetas" }, status: :unprocessable_entity
-        end
-      
-        cards = generated.map do |card_data|
-          @deck.cards.create!(front: card_data["front"], back: card_data["back"])
-        end
-      
-        render json: cards.map { |c| CardSerializer.new(c).as_json }, status: :created
-      end
+  unless params[:file].present?
+    return render json: { error: "Debes subir un archivo PDF" }, status: :unprocessable_entity
+  end
+
+  text = PdfExtractorService.new(params[:file]).extract_text
+
+  if text.blank?
+    return render json: { error: "No se pudo extraer texto del PDF" }, status: :unprocessable_entity
+  end
+
+  generated = GeminiService.new(text).generate_cards
+
+  if generated.empty?
+    return render json: { error: "No se pudieron generar tarjetas" }, status: :unprocessable_entity
+  end
+
+  category = @deck.categories.create!(name: "Importación #{Time.current.strftime('%d/%m/%Y %H:%M')}")
+
+  cards = generated.map do |card_data|
+    category.cards.create!(front: card_data["front"], back: card_data["back"])
+  end
+
+  render json: cards.map { |c| CardSerializer.new(c).as_json }, status: :created
+end
 
       private
 
