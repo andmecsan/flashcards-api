@@ -2,7 +2,7 @@ module Api
   module V1
     class CategoriesController < BaseController
       before_action :set_deck, only: [ :index, :create ]
-      before_action :set_category, only: [ :show, :update, :destroy ]
+      before_action :set_category, only: [ :show, :update, :destroy, :update_topic ]
 
       def index
         categories = @deck.categories.order(created_at: :desc)
@@ -28,6 +28,23 @@ module Api
         else
           render json: { errors: @category.errors.full_messages }, status: :unprocessable_entity
         end
+      end
+
+      def update_topic
+        unless @category.update(name: params[:name])
+          return render json: { errors: @category.errors.full_messages }, status: :unprocessable_entity
+        end
+
+        @category.cards.destroy_all
+
+        cards = (params[:cards] || []).map do |card_data|
+          @category.cards.create!(front: card_data[:front], back: card_data[:back])
+        end
+
+        render json: {
+          category: CategorySerializer.new(@category).as_json,
+          cards: cards.map { |c| CardSerializer.new(c).as_json }
+        }
       end
 
       def destroy

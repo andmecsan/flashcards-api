@@ -1,8 +1,8 @@
 module Api
   module V1
     class DecksController < BaseController
-      before_action :set_deck, only: [ :show, :update, :destroy, :study, :import ]
-
+      before_action :set_deck, only: [:show, :update, :destroy, :study, :import, :create_topic]
+      
       def index
         decks = current_user.decks.order(created_at: :desc)
         render json: decks.map { |d| DeckSerializer.new(d, current_user).as_json }
@@ -10,6 +10,23 @@ module Api
 
       def show
         render json: DeckSerializer.new(@deck, current_user).as_json
+      end
+
+      def create_topic
+      category = @deck.categories.build(name: params[:name])
+
+      unless category.save
+        return render json: { errors: category.errors.full_messages }, status: :unprocessable_entity
+      end
+
+      cards = (params[:cards] || []).map do |card_data|
+        category.cards.create!(front: card_data[:front], back: card_data[:back])
+      end
+
+      render json: {
+        category: CategorySerializer.new(category).as_json,
+        cards: cards.map { |c| CardSerializer.new(c).as_json }
+      }, status: :created
       end
 
       def create

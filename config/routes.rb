@@ -9,8 +9,10 @@ Rails.application.routes.draw do
       resources :decks do
         get :study, on: :member
         post :import, on: :member
+        post :create_topic, on: :member  # añade esta línea
         resources :categories, shallow: true do
           resources :cards, shallow: true
+          patch :update_topic, on: :member
         end
       end
 
