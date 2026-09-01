@@ -13,6 +13,7 @@ Rails.application.routes.draw do
         resources :categories, shallow: true do
           resources :cards, shallow: true
           patch :update_topic, on: :member
+          get :review_cards, on: :member
         end
       end
 
