@@ -137,7 +137,7 @@ module Api
       end
 
       def deck_params
-        params.require(:deck).permit(:name, :description)
+        params.require(:deck).permit(:name, :icon, :color)
       end
 
       def mastered_count

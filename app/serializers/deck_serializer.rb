@@ -7,15 +7,19 @@ class DeckSerializer
   def as_json(*)
     total = @deck.cards.count
     mastered = mastered_count
+    in_progress = in_progress_count
+    new_cards = total - mastered - in_progress
 
     {
       id:          @deck.id,
       name:        @deck.name,
-      description: @deck.description,
+      icon:        @deck.icon,
+      color:       @deck.color,
       card_count:  total,
       due_count:   @deck.due_count_for(@user),
       mastered:    mastered,
-      progress:    total > 0 ? (mastered.to_f / total * 100).round(1) : 0,
+      in_progress: in_progress,
+      new_cards:   new_cards,
       created_at:  @deck.created_at
     }
   end
@@ -28,6 +32,15 @@ class DeckSerializer
       .where(decks: { id: @deck.id })
       .where(card_reviews: { user: @user })
       .where("card_reviews.interval > ?", 21)
+      .count
+  end
+
+  def in_progress_count
+    CardReview
+      .joins(card: { category: :deck })
+      .where(decks: { id: @deck.id })
+      .where(card_reviews: { user: @user })
+      .where("card_reviews.interval <= ?", 21)
       .count
   end
 end
