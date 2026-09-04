@@ -4,10 +4,11 @@ module Api
       before_action :set_deck, only: [ :index, :create ]
       before_action :set_category, only: [ :show, :update, :destroy, :update_topic, :review_cards ]
 
-      def index
-        categories = @deck.categories.order(created_at: :desc)
-        render json: categories.map { |c| CategorySerializer.new(c).as_json }
-      end
+    def index
+      categories = @deck.categories.order(created_at: :desc)
+      categories = categories.where("name ILIKE ?", "%#{params[:q]}%") if params[:q].present?
+      render json: categories.map { |c| CategorySerializer.new(c).as_json }
+    end
 
       def show
         render json: CategorySerializer.new(@category).as_json

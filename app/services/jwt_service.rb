@@ -1,9 +1,8 @@
 class JwtService
   SECRET = Rails.application.credentials.jwt[:secret]
-  EXPIRATION = 24.hours.from_now.to_i
 
   def self.encode(payload)
-    payload[:exp] = EXPIRATION
+    payload[:exp] = 24.hours.from_now.to_i
     JWT.encode(payload, SECRET, "HS256")
   end
 

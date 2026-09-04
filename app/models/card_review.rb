@@ -30,6 +30,7 @@ class CardReview < ApplicationRecord
 
     self.next_review_at = Time.current + interval.days
     save!
+    review_logs.create!(quality: quality, reviewed_at: Time.current)
   end
 
   def due?

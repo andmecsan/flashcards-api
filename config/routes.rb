@@ -6,8 +6,10 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      resources :stats, only: [:index]
       resources :decks do
         get :study, on: :member
+        get :stats, on: :member
         post :import, on: :member
         post :create_topic, on: :member  # añade esta línea
         resources :categories, shallow: true do
