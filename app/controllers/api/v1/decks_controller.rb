@@ -8,6 +8,7 @@ module Api
         due = @deck.due_count_for(current_user)
         in_progress = in_progress_count
         mastered = mastered_count
+        new_cards = total - mastered - in_progress
         logs = deck_review_logs
 
         render json: {
@@ -16,7 +17,8 @@ module Api
           mastered:     mastered,
           in_progress:     in_progress,
           success_rate: logs.any? ? (logs.where("quality >= 4").count.to_f / logs.count * 100).round(1) : nil,
-          next_review:  next_category_review
+          next_review:  next_category_review,
+          new_cards: new_cards
         }
       end
 
