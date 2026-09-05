@@ -42,6 +42,7 @@ gem "jwt"
 
 gem "pdf-reader"
 gem "faraday"
+gem "bcrypt"
 
 group :development, :test do
   gem "rspec-rails"

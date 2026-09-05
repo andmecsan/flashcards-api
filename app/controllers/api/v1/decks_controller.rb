@@ -1,7 +1,7 @@
 module Api
   module V1
     class DecksController < BaseController
-      before_action :set_deck, only: [:show, :update, :destroy, :study, :import, :create_topic, :stats]
+      before_action :set_deck, only: [:show, :update, :destroy, :study, :create_topic, :stats]
     
       def stats
         total = @deck.cards.count
@@ -81,51 +81,6 @@ module Api
       def study
         cards = @deck.due_cards_for(current_user).includes(:card_reviews)
         render json: cards.map { |c| CardStudySerializer.new(c, current_user).as_json }
-      end
-
-
-      def import
-        unless params[:file].present?
-          return render json: { error: "Debes subir un archivo PDF" }, status: :unprocessable_entity
-        end
-
-        text = PdfExtractorService.new(params[:file]).extract_text
-
-        if text.blank?
-          return render json: { error: "No se pudo extraer texto del PDF" }, status: :unprocessable_entity
-        end
-
-        result = GeminiService.new(text).generate_cards
-
-        if result.nil?
-          return render json: { error: "No se pudieron generar tarjetas" }, status: :unprocessable_entity
-        end
-
-        if result.is_a?(Array)
-          category_name = "Importación #{Time.current.strftime('%d/%m/%Y %H:%M')}"
-          cards_data = result
-        else
-          category_name = result["name"] || "Importación #{Time.current.strftime('%d/%m/%Y %H:%M')}"
-          cards_data = result["cards"] || []
-        end
-
-        if cards_data.empty?
-          return render json: { error: "No se pudieron generar tarjetas" }, status: :unprocessable_entity
-        end
-
-        cards = []
-
-        ActiveRecord::Base.transaction do
-          category = @deck.categories.create!(name: category_name)
-
-          cards = cards_data.map do |card_data|
-            category.cards.create!(front: card_data["front"], back: card_data["back"])
-          end
-        end
-
-        render json: cards.map { |c| CardSerializer.new(c).as_json }, status: :created
-      rescue ActiveRecord::RecordInvalid => e
-        render json: { error: e.message }, status: :unprocessable_entity
       end
 
       private

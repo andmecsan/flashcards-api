@@ -45,6 +45,34 @@ module Api
         render json: { error: e.message }, status: :unprocessable_entity
       end
 
+      def generate
+        unless params[:file].present?
+          return render json: { error: "Debes subir un archivo PDF" }, status: :unprocessable_entity
+        end
+
+        text = PdfExtractorService.new(params[:file]).extract_text
+
+        if text.blank?
+          return render json: { error: "No se pudo extraer texto del PDF" }, status: :unprocessable_entity
+        end
+
+        result = GeminiService.new(text).generate_cards
+
+        if result.nil?
+          return render json: { error: "No se pudieron generar tarjetas" }, status: :unprocessable_entity
+        end
+
+        if result.is_a?(Array)
+          cards = result
+          name = nil
+        else
+          cards = result["cards"] || []
+          name = result["name"]
+        end
+
+        render json: { name: name, cards: cards }
+      end
+
       private
 
       def set_category
