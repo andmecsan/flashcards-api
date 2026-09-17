@@ -8,7 +8,6 @@ FactoryBot.define do
   factory :deck do
     association :user
     name { "Algoritmos" }
-    description { "Tarjetas de algoritmia" }
   end
 
   factory :category do

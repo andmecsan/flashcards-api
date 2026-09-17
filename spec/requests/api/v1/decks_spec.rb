@@ -11,7 +11,7 @@ RSpec.describe "Api::V1::Decks", type: :request do
       get "/api/v1/decks", headers: headers
 
       expect(response).to have_http_status(:ok)
-      expect(JSON.parse(response.body).size).to eq(2)
+      expect(JSON.parse(response.body)["decks"].size).to eq(2)
     end
 
     it "no devuelve mazos de otro usuario" do
@@ -21,7 +21,7 @@ RSpec.describe "Api::V1::Decks", type: :request do
       get "/api/v1/decks", headers: headers
 
       expect(response).to have_http_status(:ok)
-      expect(JSON.parse(response.body).size).to eq(0)
+      expect(JSON.parse(response.body)["decks"].size).to eq(0)
     end
 
     it "devuelve 401 sin token" do

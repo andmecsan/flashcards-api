@@ -4,7 +4,8 @@ require "rails_helper"
 RSpec.describe CardReview, type: :model do
   let(:user) { User.create!(name: "Andrea", email: "andrea@test.com", uid: "google-123") }
   let(:deck) { Deck.create!(name: "SM-2", user: user) }
-  let(:card) { Card.create!(front: "¿Qué es SM-2?", back: "Un algoritmo de repaso espaciado", deck: deck) }
+  let(:category) { Category.create!(name: "Básicos", deck: deck) }
+  let(:card) { Card.create!(front: "¿Qué es SM-2?", back: "Un algoritmo de repaso espaciado", category: category) }
 
   let(:fresh_review) do
     CardReview.create!(

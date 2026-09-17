@@ -15,7 +15,7 @@ RSpec.describe "Api::V1::Deck Stats", type: :request do
       expect(body["total_cards"]).to eq(0)
       expect(body["due_today"]).to eq(0)
       expect(body["mastered"]).to eq(0)
-      expect(body["progress"]).to eq(0)
+      expect(body["in_progress"]).to eq(0)
       expect(body["success_rate"]).to be_nil
     end
 
@@ -111,7 +111,7 @@ RSpec.describe "Api::V1::Deck Stats", type: :request do
 
       body = JSON.parse(response.body)
       expect(body["mastered"]).to eq(1)
-      expect(body["progress"]).to eq(100.0)
+      expect(body["in_progress"]).to eq(0)
     end
 
     it "no mezcla stats de otros usuarios" do
