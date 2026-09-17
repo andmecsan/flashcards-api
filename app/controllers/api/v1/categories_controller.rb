@@ -7,7 +7,17 @@ module Api
     def index
       categories = @deck.categories.order(created_at: :desc)
       categories = categories.where("name ILIKE ?", "%#{params[:q]}%") if params[:q].present?
-      render json: categories.map { |c| CategorySerializer.new(c).as_json }
+
+      page = (params[:page] || 1).to_i
+      per_page = (params[:per_page] || 9).to_i
+      total = categories.count
+
+      categories = categories.offset((page - 1) * per_page).limit(per_page)
+
+      render json: {
+        categories: categories.map { |c| CategorySerializer.new(c).as_json },
+        meta: { page: page, per_page: per_page, total: total, total_pages: (total.to_f / per_page).ceil }
+      }
     end
 
       def show
@@ -19,7 +29,7 @@ module Api
         if category.save
           render json: CategorySerializer.new(category).as_json, status: :created
         else
-          render json: { errors: category.errors.full_messages }, status: :unprocessable_entity
+         render json: { errors: category.errors.map { |e| e.message } }, status: :unprocessable_entity
         end
       end
 
@@ -27,7 +37,7 @@ module Api
         if @category.update(category_params)
           render json: CategorySerializer.new(@category).as_json
         else
-          render json: { errors: @category.errors.full_messages }, status: :unprocessable_entity
+         render json: { errors: category.errors.map { |e| e.message } }, status: :unprocessable_entity
         end
       end
 

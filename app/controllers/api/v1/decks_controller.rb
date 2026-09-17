@@ -2,60 +2,25 @@ module Api
   module V1
     class DecksController < BaseController
       before_action :set_deck, only: [:show, :update, :destroy, :study, :create_topic, :stats]
-    
-      def stats
-        total = @deck.cards.count
-        due = @deck.due_count_for(current_user)
-        in_progress = in_progress_count
-        mastered = mastered_count
-        new_cards = total - mastered - in_progress
-        logs = deck_review_logs
-
-        render json: {
-          total_cards:  total,
-          due_today:    due,
-          mastered:     mastered,
-          in_progress:     in_progress,
-          success_rate: logs.any? ? (logs.where("quality >= 4").count.to_f / logs.count * 100).round(1) : nil,
-          next_review:  next_category_review,
-          new_cards: new_cards
-        }
-      end
 
       def index
         decks = current_user.decks.order(created_at: :desc)
         decks = decks.where("name ILIKE ?", "%#{params[:q]}%") if params[:q].present?
-        render json: decks.map { |d| DeckSerializer.new(d, current_user).as_json }
+
+        page = (params[:page] || 1).to_i
+        per_page = (params[:per_page] || 9).to_i
+        total = decks.count
+
+        decks = decks.offset((page - 1) * per_page).limit(per_page)
+
+        render json: {
+          decks: decks.map { |d| DeckSerializer.new(d, current_user).as_json },
+          meta: { page: page, per_page: per_page, total: total, total_pages: (total.to_f / per_page).ceil }
+        }
       end
 
       def show
         render json: DeckSerializer.new(@deck, current_user).as_json
-      end
-
-      def in_progress_count
-        CardReview
-          .joins(card: { category: :deck })
-          .where(decks: { id: @deck.id })
-          .where(card_reviews: { user: current_user })
-          .where("card_reviews.interval <= ?", 21)
-          .count
-      end
-
-      def create_topic
-      category = @deck.categories.build(name: params[:name])
-
-      unless category.save
-        return render json: { errors: category.errors.full_messages }, status: :unprocessable_entity
-      end
-
-      cards = (params[:cards] || []).map do |card_data|
-        category.cards.create!(front: card_data[:front], back: card_data[:back])
-      end
-
-      render json: {
-        category: CategorySerializer.new(category).as_json,
-        cards: cards.map { |c| CardSerializer.new(c).as_json }
-      }, status: :created
       end
 
       def create
@@ -63,7 +28,7 @@ module Api
         if deck.save
           render json: DeckSerializer.new(deck, current_user).as_json, status: :created
         else
-          render json: { errors: deck.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: deck.errors.map { |e| e.message } }, status: :unprocessable_entity
         end
       end
 
@@ -71,7 +36,7 @@ module Api
         if @deck.update(deck_params)
           render json: DeckSerializer.new(@deck, current_user).as_json
         else
-          render json: { errors: @deck.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: @deck.errors.map { |e| e.message } }, status: :unprocessable_entity
         end
       end
 
@@ -83,6 +48,43 @@ module Api
       def study
         cards = @deck.due_cards_for(current_user).includes(:card_reviews)
         render json: cards.map { |c| CardStudySerializer.new(c, current_user).as_json }
+      end
+
+      def stats
+        total = @deck.cards.count
+        mastered = mastered_count
+        in_progress = in_progress_count
+        new_cards = total - mastered - in_progress
+        logs = deck_review_logs
+
+        render json: {
+          total_cards:  total,
+          due_today:    @deck.due_count_for(current_user),
+          mastered:     mastered,
+          in_progress:  in_progress,
+          new_cards:    new_cards,
+          success_rate: logs.any? ? (logs.where("quality >= 4").count.to_f / logs.count * 100).round(1) : nil,
+          next_review:  next_category_review
+        }
+      end
+
+      def create_topic
+        cards = []
+
+        ActiveRecord::Base.transaction do
+          category = @deck.categories.create!(name: params[:name])
+
+          cards = (params[:cards] || []).map do |card_data|
+            category.cards.create!(front: card_data[:front], back: card_data[:back])
+          end
+
+          render json: {
+            category: CategorySerializer.new(category).as_json,
+            cards: cards.map { |c| CardSerializer.new(c).as_json }
+          }, status: :created
+        end
+      rescue ActiveRecord::RecordInvalid => e
+        render json: { errors: [e.record.errors.map { |err| err.message }].flatten }, status: :unprocessable_entity
       end
 
       private
@@ -103,6 +105,15 @@ module Api
           .where(decks: { id: @deck.id })
           .where(card_reviews: { user: current_user })
           .where("card_reviews.interval > ?", 21)
+          .count
+      end
+
+      def in_progress_count
+        CardReview
+          .joins(card: { category: :deck })
+          .where(decks: { id: @deck.id })
+          .where(card_reviews: { user: current_user })
+          .where("card_reviews.interval <= ?", 21)
           .count
       end
 
