@@ -12,8 +12,8 @@ module Api
       end
 
       def update
-        if params[:current_password].present?
-          unless current_user.authenticate(params[:current_password])
+        if profile_params[:password].present? && current_user.password_digest.present?
+          unless params[:current_password].present? && current_user.authenticate(params[:current_password])
             return render json: { error: "Contraseña actual incorrecta" }, status: :unprocessable_entity
           end
         end
