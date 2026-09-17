@@ -7,6 +7,14 @@ class Card < ApplicationRecord
   validates :front, presence: true
   validates :back,  presence: true
 
+  scope :due_for, ->(user) {
+    left_joins(:card_reviews)
+      .where(
+        "card_reviews.id IS NULL OR (card_reviews.user_id = ? AND card_reviews.next_review_at <= ?)",
+        user.id, Time.current
+      )
+  }
+
   # @param user [User]
   # @return [CardReview]
   def review_for(user)

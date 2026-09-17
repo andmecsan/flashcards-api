@@ -77,7 +77,7 @@ module Api
       end
 
       def set_category
-        @category = Category.joins(:deck).where(decks: { user: current_user }).find(params[:id])
+        @category = current_user.categories.find(params[:id])
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Categoría no encontrada" }, status: :not_found
       end

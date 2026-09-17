@@ -2,6 +2,8 @@ class User < ApplicationRecord
   has_secure_password validations: false
 
   has_many :decks,        dependent: :destroy
+  has_many :categories,   through: :decks
+  has_many :cards,        through: :categories
   has_many :card_reviews, dependent: :destroy
 
   validates :name,     presence: true

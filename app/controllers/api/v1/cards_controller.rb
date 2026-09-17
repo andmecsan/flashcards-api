@@ -76,13 +76,13 @@ module Api
       private
 
       def set_category
-        @category = Category.joins(:deck).where(decks: { user: current_user }).find(params[:category_id])
+        @category = current_user.categories.find(params[:category_id])
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Categoría no encontrada" }, status: :not_found
       end
 
       def set_card
-        @card = Card.joins(category: :deck).where(decks: { user: current_user }).find(params[:id])
+        @card = current_user.cards.find(params[:id])
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Tarjeta no encontrada" }, status: :not_found
       end

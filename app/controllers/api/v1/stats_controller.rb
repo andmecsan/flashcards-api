@@ -52,12 +52,8 @@ module Api
       def next_review
         due_cards = Card
           .joins(category: :deck)
-          .left_joins(:card_reviews)
           .where(decks: { user: current_user })
-          .where(
-            "card_reviews.id IS NULL OR (card_reviews.user_id = ? AND card_reviews.next_review_at <= ?)",
-            current_user.id, Time.current
-          )
+          .due_for(current_user)
 
         category_counts = due_cards
           .group("categories.id", "categories.name", "decks.id", "decks.name")

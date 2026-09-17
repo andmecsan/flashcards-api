@@ -52,8 +52,8 @@ module Api
 
       def stats
         total = @deck.cards.count
-        mastered = mastered_count
-        in_progress = in_progress_count
+        mastered = @deck.mastered_count_for(current_user)
+        in_progress = @deck.in_progress_count_for(current_user)
         new_cards = total - mastered - in_progress
         logs = deck_review_logs
 
@@ -99,24 +99,6 @@ module Api
         params.require(:deck).permit(:name, :icon, :color)
       end
 
-      def mastered_count
-        CardReview
-          .joins(card: { category: :deck })
-          .where(decks: { id: @deck.id })
-          .where(card_reviews: { user: current_user })
-          .where("card_reviews.interval > ?", 21)
-          .count
-      end
-
-      def in_progress_count
-        CardReview
-          .joins(card: { category: :deck })
-          .where(decks: { id: @deck.id })
-          .where(card_reviews: { user: current_user })
-          .where("card_reviews.interval <= ?", 21)
-          .count
-      end
-
       def deck_review_logs
         ReviewLog
           .joins(card_review: { card: { category: :deck } })
@@ -125,14 +107,7 @@ module Api
       end
 
       def next_category_review
-        due_cards = @deck.cards
-          .left_joins(:card_reviews)
-          .where(
-            "card_reviews.id IS NULL OR (card_reviews.user_id = ? AND card_reviews.next_review_at <= ?)",
-            current_user.id, Time.current
-          )
-
-        counts = due_cards
+        counts = @deck.cards.due_for(current_user)
           .group("categories.id", "categories.name")
           .count
 
