@@ -32,8 +32,6 @@ services:
         fromDatabase:
           name: flashcards-api-db
           property: connectionString
-      - key: SOLID_QUEUE_IN_PUMA
-        value: "true"
       - key: WEB_CONCURRENCY
         value: "1"
       - key: RAILS_MAX_THREADS
