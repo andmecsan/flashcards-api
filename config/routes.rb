@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  root to: "rails/health#show"
   get "up" => "rails/health#show", as: :rails_health_check
 
   get  "/auth/google_oauth2/callback", to: "auth#google_callback"
