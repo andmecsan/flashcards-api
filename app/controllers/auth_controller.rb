@@ -4,7 +4,8 @@ class AuthController < ApplicationController
   def google_callback
     user = User.from_omniauth(request.env["omniauth.auth"])
     token = JwtService.encode({ user_id: user.id })
-    redirect_to "http://localhost:5173/auth/callback?token=#{token}", allow_other_host: true
+    frontend_url = ENV.fetch("FRONTEND_URL", "http://localhost:5173")
+    redirect_to "#{frontend_url}/auth/callback?token=#{token}", allow_other_host: true
   end
 
   def register

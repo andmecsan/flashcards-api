@@ -1,5 +1,6 @@
 # Almacena el estado SM-2 de una tarjeta para un usuario concreto.
-# Integra la lógica del algoritmo directamente en el modelo.
+# El cálculo del algoritmo en sí vive en Sm2Calculator; este modelo solo
+# aplica el resultado y lo persiste.
 class CardReview < ApplicationRecord
   belongs_to :card
   belongs_to :user
@@ -17,40 +18,23 @@ class CardReview < ApplicationRecord
   # @param quality [Integer]
   # @return [Boolean] true si se guardó correctamente
   def apply_review!(quality)
-    raise ArgumentError, "quality debe ser 0..5, recibido: #{quality}" unless (0..5).cover?(quality)
+    result = Sm2Calculator.new(
+      repetitions: repetitions,
+      interval:    interval,
+      easiness:    easiness,
+      quality:     quality
+    ).call
 
-    if quality < 3
-      self.repetitions    = 0
-      self.interval       = 1
-    else
-      self.easiness    = updated_easiness(quality)
-      self.interval    = next_interval
-      self.repetitions = repetitions + 1
-    end
+    self.repetitions    = result.repetitions
+    self.interval       = result.interval
+    self.easiness       = result.easiness
+    self.next_review_at = result.next_review_at
 
-    self.next_review_at = Time.current + interval.days
     save!
     review_logs.create!(quality: quality, reviewed_at: Time.current)
   end
 
   def due?
     next_review_at <= Time.current
-  end
-
-  private
-
-  def updated_easiness(quality)
-    # Fórmula original de Wozniak (SM-2, 1987), calibrada empíricamente.
-    # El castigo es cuadrático: cuanto peor la calificación, mayor la penalización.
-    new_easiness = 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)
-    [ 1.3, easiness + new_easiness ].max.round(4)
-  end
-
-  def next_interval
-    case repetitions
-    when 0 then 1
-    when 1 then 6
-    else (interval * easiness).round
-    end
   end
 end
