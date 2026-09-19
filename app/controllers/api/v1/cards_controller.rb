@@ -71,6 +71,10 @@ module Api
         end
 
         render json: { name: name, cards: cards }
+      rescue GeminiService::RateLimitError
+        render json: { error: "Se ha alcanzado el límite de peticiones a la IA. Inténtalo de nuevo en unos minutos." }, status: :too_many_requests
+      rescue GeminiService::UnavailableError
+        render json: { error: "El servicio de generación con IA no está disponible ahora mismo. Inténtalo más tarde." }, status: :service_unavailable
       end
 
       private

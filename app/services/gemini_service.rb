@@ -1,21 +1,33 @@
 class GeminiService
   URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent"
 
+  class RateLimitError < StandardError; end
+  class UnavailableError < StandardError; end
+
   def initialize(text)
     @text = text
   end
 
   def generate_cards
-    response = Faraday.post(
+    response = connection.post(
       "#{URL}?key=#{api_key}",
       request_body.to_json,
       "Content-Type" => "application/json"
     )
 
+    raise RateLimitError if response.status == 429
+    raise UnavailableError, "Gemini respondió #{response.status}" unless response.success?
+
     parse_response(response)
+  rescue Faraday::Error => e
+    raise UnavailableError, e.message
   end
 
   private
+
+  def connection
+    Faraday.new(request: { open_timeout: 5, timeout: 15 })
+  end
 
   def api_key
     Rails.application.credentials.gemini[:api_key]

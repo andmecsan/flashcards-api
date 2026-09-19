@@ -2,12 +2,21 @@
 
 puts "🌱 Creando datos de demo..."
 
-# Usuario demo
-user = User.find_by(email: "flashcardsupport@gmail.com")
+# Usuario demo (se crea con acceso local si no existe; si ya entró con Google, se reutiliza)
+DEMO_EMAIL = "flashcardsupport@gmail.com"
+
+user = User.find_by(email: DEMO_EMAIL)
 
 unless user
-  puts "❌ No hay usuario con ese email. Inicia sesión con Google primero con flashcardsupport@gmail.com"
-  exit
+  password = ENV["flashcardAdmin"]
+
+  if password.blank?
+    puts "❌ No existe el usuario #{DEMO_EMAIL}
+    exit 1
+  end
+
+  user = User.create!(name: "Flash Learn Demo", email: DEMO_EMAIL, password: password)
+  puts "🆕 Usuario demo creado"
 end
 
 puts "✅ Usuario: #{user.name}"
@@ -91,25 +100,33 @@ puts "📊 Simulando historial de estudio..."
 
 vocab.cards.limit(6).each do |card|
   review = card.review_for(user)
-  review.save! unless review.persisted?
+  next if review.persisted?
+
+  review.save!
   review.apply_review!(5)
 end
 
 vocab.cards.offset(6).each do |card|
   review = card.review_for(user)
-  review.save! unless review.persisted?
+  next if review.persisted?
+
+  review.save!
   review.apply_review!(3)
 end
 
 numeros.cards.limit(3).each do |card|
   review = card.review_for(user)
-  review.save! unless review.persisted?
+  next if review.persisted?
+
+  review.save!
   review.apply_review!(4)
 end
 
 complejidad.cards.limit(2).each do |card|
   review = card.review_for(user)
-  review.save! unless review.persisted?
+  next if review.persisted?
+
+  review.save!
   review.apply_review!(5)
 end
 

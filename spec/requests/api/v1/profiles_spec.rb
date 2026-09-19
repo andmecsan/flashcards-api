@@ -44,4 +44,27 @@ RSpec.describe "Api::V1::Profiles", type: :request do
       expect(user.reload.name).to eq("Nuevo nombre")
     end
   end
+
+  describe "GET /api/v1/profile" do
+    it "muestra la información del usuario autenticado" do
+      get "/api/v1/profile", headers: headers
+
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+      expect(body["email"]).to eq("andrea@test.com")
+      expect(body["has_password"]).to be true
+      expect(body["has_google"]).to be false
+    end
+  end
+
+  describe "DELETE /api/v1/profile" do
+    it "elimina la cuenta del usuario autenticado" do
+      user_id = user.id
+
+      delete "/api/v1/profile", headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(User.exists?(user_id)).to be false
+    end
+  end
 end
