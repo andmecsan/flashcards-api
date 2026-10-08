@@ -15,6 +15,10 @@ class DeckSerializer
       name:        @deck.name,
       icon:        @deck.icon,
       color:       @deck.color,
+      favorite:    @deck.favorite,
+      area:        predefined(:area),
+      level:       predefined(:level),
+      course:      predefined(:course),
       card_count:  total,
       due_count:   @deck.due_count_for(@user),
       mastered:    mastered,
@@ -22,5 +26,13 @@ class DeckSerializer
       new_cards:   new_cards,
       created_at:  @deck.created_at
     }
+  end
+
+  private
+
+  # Etiqueta predefinida (área, nivel o curso) de la asignatura, o nil si no la tiene.
+  def predefined(kind)
+    tag = @deck.tags.detect { |t| t.kind == kind.to_s }
+    tag && TagSerializer.new(tag).as_json
   end
 end

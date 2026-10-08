@@ -5,7 +5,7 @@ module Api
       before_action :set_card, only: [ :show, :update, :destroy, :review ]
 
       def index
-        cards = @category.cards.order(created_at: :desc)
+        cards = policy_scope(@category.cards).includes(:tags).order(created_at: :desc)
         render json: cards.map { |c| CardSerializer.new(c).as_json }
       end
 
@@ -15,19 +15,24 @@ module Api
 
       def create
         card = @category.cards.build(card_params)
-        if card.save
-          render json: CardSerializer.new(card).as_json, status: :created
-        else
-          render json: { errors: card.errors.full_messages }, status: :unprocessable_entity
+        authorize card
+        Card.transaction do
+          card.save!
+          card.replace_personal_tags!(card_tags) unless card_tags.nil?
         end
+        render json: CardSerializer.new(card).as_json, status: :created
+      rescue ActiveRecord::RecordInvalid => e
+        render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
       end
 
       def update
-        if @card.update(card_params)
-          render json: CardSerializer.new(@card).as_json
-        else
-          render json: { errors: @card.errors.full_messages }, status: :unprocessable_entity
+        Card.transaction do
+          @card.update!(card_params)
+          @card.replace_personal_tags!(card_tags) unless card_tags.nil?
         end
+        render json: CardSerializer.new(@card.reload).as_json
+      rescue ActiveRecord::RecordInvalid => e
+        render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
       end
 
       def destroy
@@ -46,6 +51,8 @@ module Api
       end
 
       def generate
+        authorize Card
+
         unless params[:file].present?
           return render json: { error: "Debes subir un archivo PDF" }, status: :unprocessable_entity
         end
@@ -80,15 +87,22 @@ module Api
       private
 
       def set_category
-        @category = current_user.categories.find(params[:category_id])
+        @category = policy_scope(Category).find(params[:category_id])
+        authorize @category, :show?
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Categoría no encontrada" }, status: :not_found
       end
 
       def set_card
-        @card = current_user.cards.find(params[:id])
+        @card = policy_scope(Card).find(params[:id])
+        authorize @card
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Tarjeta no encontrada" }, status: :not_found
+      end
+
+      # Etiquetas personales enviadas (`card: { tags: [...] }`); nil si el cliente no las envía.
+      def card_tags
+        params.dig(:card, :tags)&.then { |tags| Array(tags) }
       end
 
       def card_params

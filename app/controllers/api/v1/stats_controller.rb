@@ -1,12 +1,23 @@
 module Api
   module V1
     class StatsController < BaseController
+      before_action :self_service_only!
+
       def index
         render json: {
           study_streak:    study_streak,
           last_session:    last_session,
           next_review:     next_review
         }
+      end
+
+      # Ranking para las nubes «Para reforzar» / «Puntos fuertes». `?group=tag`
+      # agrupa por etiqueta personal; por defecto, por temario.
+      def mastery
+        group = params.fetch(:group, "category").to_s
+        return render json: { error: "Agrupación no válida" }, status: :bad_request unless MasteryRanking::GROUPS.map(&:to_s).include?(group)
+
+        render json: MasteryRanking.new(current_user, group: group.to_sym).call
       end
 
       private

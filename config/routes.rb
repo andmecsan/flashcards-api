@@ -10,14 +10,22 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resource :profile, only: [:show, :update, :destroy]
-      resources :stats, only: [:index]
+      resources :tags, only: [ :index, :update, :destroy ] do
+        get :system, on: :collection
+        post :merge, on: :member
+      end
+      resources :stats, only: [:index] do
+        get :mastery, on: :collection
+      end
       resources :decks do
         get :study, on: :member
         get :stats, on: :member
+        patch :favorite, on: :member
         post :create_topic, on: :member  # añade esta línea
         resources :categories, shallow: true do
           resources :cards, shallow: true
           patch :update_topic, on: :member
+          patch :move, on: :member
           get :review_cards, on: :member
         end
       end

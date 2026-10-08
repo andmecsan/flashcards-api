@@ -1,6 +1,8 @@
 module Api
   module V1
     class ProfilesController < BaseController
+      before_action :self_service_only!
+
       def show
         render json: {
           id:    current_user.id,

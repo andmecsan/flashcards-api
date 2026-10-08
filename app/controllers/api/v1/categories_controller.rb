@@ -1,24 +1,22 @@
 module Api
   module V1
     class CategoriesController < BaseController
+      before_action :validate_difficulty!, only: [ :index ]
+      before_action :validate_tag!, only: [ :index, :review_cards ]
       before_action :set_deck, only: [ :index, :create ]
-      before_action :set_category, only: [ :show, :update, :destroy, :update_topic, :review_cards ]
+      before_action :set_category, only: [ :show, :update, :destroy, :update_topic, :review_cards, :move ]
 
-    def index
-      categories = @deck.categories.order(created_at: :desc)
-      categories = categories.where("name ILIKE ?", "%#{params[:q]}%") if params[:q].present?
+      def index
+        scope = policy_scope(@deck.categories).order(created_at: :desc)
+        scope = scope.where(difficulty: params[:difficulty]) if params[:difficulty].present?
+        scope = scope.where(id: filter_by_tag(Card.all).select(:category_id)) if @filter_tag
+        categories, meta = paginate(search_by_name(scope))
 
-      page = (params[:page] || 1).to_i
-      per_page = (params[:per_page] || 9).to_i
-      total = categories.count
-
-      categories = categories.offset((page - 1) * per_page).limit(per_page)
-
-      render json: {
-        categories: categories.map { |c| CategorySerializer.new(c).as_json },
-        meta: { page: page, per_page: per_page, total: total, total_pages: (total.to_f / per_page).ceil }
-      }
-    end
+        render json: {
+          categories: categories.map { |c| CategorySerializer.new(c, tag_id: @filter_tag&.id).as_json },
+          meta: meta
+        }
+      end
 
       def show
         render json: CategorySerializer.new(@category).as_json
@@ -26,6 +24,7 @@ module Api
 
       def create
         category = @deck.categories.build(category_params)
+        authorize category
         if category.save
           render json: CategorySerializer.new(category).as_json, status: :created
         else
@@ -37,30 +36,42 @@ module Api
         if @category.update(category_params)
           render json: CategorySerializer.new(@category).as_json
         else
-         render json: { errors: category.errors.map { |e| e.message } }, status: :unprocessable_entity
+         render json: { errors: @category.errors.map { |e| e.message } }, status: :unprocessable_entity
         end
       end
 
       def review_cards
-        cards = @category.cards
+        cards = filter_by_tag(@category.cards).includes(:tags, :category)
         render json: cards.map { |c| CardStudySerializer.new(c, current_user).as_json }
       end
 
       def update_topic
-        unless @category.update(name: params[:name])
-          return render json: { errors: @category.errors.full_messages }, status: :unprocessable_entity
-        end
-
-        @category.cards.destroy_all
-
-        cards = (params[:cards] || []).map do |card_data|
-          @category.cards.create!(front: card_data[:front], back: card_data[:back])
-        end
+        cards = @category.sync_topic!(attrs: { name: params[:name] }.merge(difficulty_attrs), cards_data: params[:cards] || [])
 
         render json: {
           category: CategorySerializer.new(@category).as_json,
           cards: cards.map { |c| CardSerializer.new(c).as_json }
         }
+      rescue ActiveRecord::RecordInvalid => e
+        render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+      end
+
+      # Mueve el temario a otra asignatura del mismo usuario. Sus tarjetas, su
+      # planificación SM-2 y su historial no cambian: cuelgan de las tarjetas.
+      def move
+        target = policy_scope(Deck).find(params.require(:deck_id))
+        authorize target, :update?
+
+        if target.categories.where.not(id: @category.id).exists?(name: @category.name)
+          return render json: { errors: [ name_taken_message(target) ] }, status: :unprocessable_entity
+        end
+
+        @category.update!(deck: target)
+        render json: CategorySerializer.new(@category).as_json
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Asignatura de destino no encontrada" }, status: :not_found
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+        render json: { errors: [ name_taken_message(target) ] }, status: :unprocessable_entity
       end
 
       def destroy
@@ -70,20 +81,26 @@ module Api
 
       private
 
+      def name_taken_message(target)
+        "Ya existe un temario con ese nombre en «#{target.name}». Renómbralo antes de moverlo."
+      end
+
       def set_deck
-        @deck = current_user.decks.find(params[:deck_id])
+        @deck = policy_scope(Deck).find(params[:deck_id])
+        authorize @deck, :show?
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Mazo no encontrado" }, status: :not_found
       end
 
       def set_category
-        @category = current_user.categories.find(params[:id])
+        @category = policy_scope(Category).find(params[:id])
+        authorize @category
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Categoría no encontrada" }, status: :not_found
       end
 
       def category_params
-        params.require(:category).permit(:name)
+        params.require(:category).permit(:name, :difficulty)
       end
     end
   end
