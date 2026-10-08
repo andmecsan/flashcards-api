@@ -3,6 +3,8 @@
 # If running the rails server then create or migrate existing database
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
   ./bin/rails db:prepare
+  # Vocabulario controlado (áreas, niveles y cursos): idempotente, se mantiene al día en cada despliegue.
+  ./bin/rails runner 'Tag.sync_predefined!'
 fi
 
 exec "${@}"

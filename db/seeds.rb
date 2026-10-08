@@ -1,5 +1,9 @@
 # db/seeds.rb
 
+# Vocabulario controlado (áreas, niveles y cursos). Idempotente y necesario en todos los entornos.
+Tag.sync_predefined!
+puts "🏷️  Etiquetas predefinidas: #{Tag.predefined.count}"
+
 puts "🌱 Creando datos de demo..."
 
 # Usuario demo (se crea con acceso local si no existe; si ya entró con Google, se reutiliza)
@@ -11,7 +15,7 @@ unless user
   password = ENV["flashcardAdmin"]
 
   if password.blank?
-    puts "❌ No existe el usuario #{DEMO_EMAIL}
+    puts "❌ No existe el usuario #{DEMO_EMAIL} y falta la variable de entorno flashcardAdmin para crearlo."
     exit 1
   end
 

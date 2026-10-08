@@ -5,6 +5,7 @@ class User < ApplicationRecord
   has_many :categories,   through: :decks
   has_many :cards,        through: :categories
   has_many :card_reviews, dependent: :destroy
+  has_many :tags,         dependent: :destroy
 
   validates :name,     presence: true
   validates :email,    presence: true, uniqueness: true,
