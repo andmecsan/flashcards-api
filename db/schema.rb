@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_05_110535) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_08_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -41,8 +41,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_110535) do
   create_table "categories", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "deck_id", null: false
+    t.integer "difficulty"
     t.string "name", null: false
     t.datetime "updated_at", null: false
+    t.index ["deck_id", "difficulty"], name: "index_categories_on_deck_id_and_difficulty"
     t.index ["deck_id", "name"], name: "index_categories_on_deck_id_and_name", unique: true
     t.index ["deck_id"], name: "index_categories_on_deck_id"
   end
@@ -50,10 +52,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_110535) do
   create_table "decks", force: :cascade do |t|
     t.string "color", default: "#7C3AED"
     t.datetime "created_at", null: false
+    t.boolean "favorite", default: false, null: false
     t.string "icon", default: "📝"
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["user_id", "favorite"], name: "index_decks_on_user_id_and_favorite"
     t.index ["user_id", "name"], name: "index_decks_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_decks_on_user_id"
   end
@@ -64,6 +68,31 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_110535) do
     t.datetime "reviewed_at", null: false
     t.index ["card_review_id"], name: "index_review_logs_on_card_review_id"
     t.index ["reviewed_at"], name: "index_review_logs_on_reviewed_at"
+  end
+
+  create_table "taggings", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "tag_id", null: false
+    t.bigint "taggable_id", null: false
+    t.string "taggable_type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["tag_id", "taggable_type", "taggable_id"], name: "index_taggings_uniqueness", unique: true
+    t.index ["tag_id"], name: "index_taggings_on_tag_id"
+    t.index ["taggable_type", "taggable_id"], name: "index_taggings_on_taggable_type_and_taggable_id"
+  end
+
+  create_table "tags", force: :cascade do |t|
+    t.string "color"
+    t.datetime "created_at", null: false
+    t.integer "kind", default: 0, null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.string "slug", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["kind", "slug"], name: "index_tags_on_system_kind_and_slug", unique: true, where: "(user_id IS NULL)"
+    t.index ["user_id", "slug"], name: "index_tags_on_user_and_slug", unique: true, where: "(user_id IS NOT NULL)"
+    t.index ["user_id"], name: "index_tags_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -83,4 +112,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_110535) do
   add_foreign_key "categories", "decks"
   add_foreign_key "decks", "users"
   add_foreign_key "review_logs", "card_reviews"
+  add_foreign_key "taggings", "tags"
+  add_foreign_key "tags", "users"
 end
